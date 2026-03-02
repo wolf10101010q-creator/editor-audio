@@ -64,8 +64,7 @@ body{
 #playhead{
   position:absolute;
   top:0;
-  left:50%;
-  transform:translateX(-50%);
+  left:0;
   width:3px;
   height:100%;
   background:red;
@@ -209,6 +208,7 @@ const playBtn=document.getElementById("playBtn");
 const timeline=document.getElementById("timeline");
 const editor=document.getElementById("editor");
 const bottombar=document.getElementById("bottombar");
+const playhead=document.getElementById("playhead");
 
 /* CONFIG MODAL */
 const configBtn=document.getElementById("configBtn");
@@ -254,12 +254,36 @@ function createBlock(blob){
   timeline.appendChild(block);
 }
 
-/* PLAY TODOS */
+/* PLAY TODOS E ANIMAR PLAYHEAD */
+let playInterval;
 playBtn.onclick=function(){
-  recordings.forEach(blob=>{
-    const audio=new Audio(URL.createObjectURL(blob));
-    audio.play();
-  });
+  if(playBtn.innerText==="▶"){
+    playBtn.innerText="⏸";
+    let startTime=0;
+    const totalWidth=timeline.scrollWidth - timeline.clientWidth;
+    playhead.style.left="0px";
+
+    playInterval=setInterval(()=>{
+      startTime+=5; // velocidade do playhead
+      const percent=startTime/5000; // tempo simulado 5s total
+      if(percent>1){
+        clearInterval(playInterval);
+        playBtn.innerText="▶";
+        playhead.style.left="0px";
+        return;
+      }
+      playhead.style.left=percent*totalWidth+"px";
+    },10);
+
+    recordings.forEach(blob=>{
+      const audio=new Audio(URL.createObjectURL(blob));
+      audio.play();
+    });
+
+  }else{
+    playBtn.innerText="▶";
+    clearInterval(playInterval);
+  }
 };
 
 /* CONFIGURAÇÕES */
@@ -282,27 +306,24 @@ applyConfig.onclick=function(){
 const barHandle=document.getElementById("barHandle");
 let dragging=false;
 
+function moveBar(y){
+  let newBottom=window.innerHeight - y - bottombar.offsetHeight/2;
+  if(newBottom<0)newBottom=0;
+  bottombar.style.bottom=newBottom+"px";
+}
+
 barHandle.addEventListener("mousedown",()=>dragging=true);
 document.addEventListener("mouseup",()=>dragging=false);
-document.addEventListener("mousemove",e=>{
-  if(dragging){
-    let y=window.innerHeight - e.clientY - bottombar.offsetHeight/2;
-    if(y<0) y=0;
-    bottombar.style.bottom=y+"px";
-  }
-});
+document.addEventListener("mousemove",e=>{ if(dragging) moveBar(e.clientY); });
 
-/* Para touch devices */
 barHandle.addEventListener("touchstart",()=>dragging=true);
 document.addEventListener("touchend",()=>dragging=false);
 document.addEventListener("touchmove",e=>{
   if(dragging){
-    const touch=e.touches[0];
-    let y=window.innerHeight - touch.clientY - bottombar.offsetHeight/2;
-    if(y<0) y=0;
-    bottombar.style.bottom=y+"px";
+    e.preventDefault();
+    moveBar(e.touches[0].clientY);
   }
-});
+}, {passive:false});
 </script>
 
 </body>
