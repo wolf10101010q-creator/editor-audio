@@ -6,164 +6,30 @@
 <title>Editor CapCut Áudio</title>
 
 <style>
-*{margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif;}
-body{
-  background:#0d0d0d;
-  color:white;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+body{background:#0d0d0d;color:white;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 
-/* TOPO */
-#topbar{
-  height:50px;
-  background:#111;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:bold;
-  border-bottom:1px solid #222;
-}
+#topbar{height:50px;background:#111;display:flex;align-items:center;justify-content:center;font-weight:bold;border-bottom:1px solid #222;}
 
-/* EDITOR TIMELINE */
-#editor{
-  background:#161616;
-  position:relative;
-  overflow:hidden;
-  flex:1;
-  width:100%;
-}
+/* editor */
+#editor{background:#161616;position:relative;overflow:hidden;flex:1;width:100%;}
+#timeline{position:absolute;top:50px;left:0;height:100%;width:2000px;display:flex;align-items:center;padding:0 50px;gap:10px;overflow-x:auto;}
+.clip{height:70px;background:linear-gradient(45deg,#ff0055,#ff3366);border-radius:12px;min-width:100px;position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;}
+.clip input{background:transparent;border:none;color:white;width:90%;text-align:center;}
+#playhead{position:absolute;top:0;left:0;width:3px;height:100%;background:red;z-index:10;}
+#ruler{position:absolute;top:0;left:0;width:2000px;height:50px;background:#1c1c1c;border-bottom:1px solid #333;}
 
-/* SCROLL HORIZONTAL */
-#timeline{
-  position:absolute;
-  top:30px;
-  left:0;
-  height:100%;
-  width:2000px;
-  display:flex;
-  align-items:center;
-  padding:0 50px;
-  gap:10px;
-  overflow-x:auto;
-}
+/* barra inferior fixa */
+#bottombar{height:90px;background:#000;display:flex;justify-content:space-around;align-items:center;border-top:1px solid #222;position:fixed;bottom:0;left:0;width:100%;z-index:100;cursor:grab;}
+#barHandle{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;height:10px;cursor:ns-resize;}
+.control-btn{width:60px;height:60px;border-radius:50%;background:#222;display:flex;align-items:center;justify-content:center;font-size:18px;color:white;z-index:101;}
+.control-btn.play{background:#ff0033;}
+.control-btn:active{transform:scale(0.9);}
 
-/* CLIPS */
-.clip{
-  height:70px;
-  background:linear-gradient(45deg,#ff0055,#ff3366);
-  border-radius:12px;
-  min-width:100px;
-  position:relative;
-  cursor:pointer;
-}
-
-/* PLAYHEAD */
-#playhead{
-  position:absolute;
-  top:0;
-  left:0;
-  width:3px;
-  height:100%;
-  background:red;
-  z-index:10;
-}
-
-/* BARRA INFERIOR FIXA */
-#bottombar{
-  height:90px;
-  background:#000;
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  border-top:1px solid #222;
-  position: fixed;
-  bottom: 0px;
-  left: 0;
-  width: 100%;
-  z-index:100;
-  cursor:grab;
-}
-
-/* HANDLE PARA ARRASTAR */
-#barHandle{
-  position:absolute;
-  top:0;
-  left:50%;
-  transform:translateX(-50%);
-  width:100%;
-  height:10px;
-  cursor:ns-resize;
-}
-
-/* BOTÕES */
-.control-btn{
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  background:#222;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  color:white;
-  z-index:101;
-}
-
-.control-btn.play{
-  background:#ff0033;
-}
-
-.control-btn:active{
-  transform:scale(0.9);
-}
-
-/* CONFIG MODAL */
-#configModal{
-  position:fixed;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  width:300px;
-  background:#181818;
-  border-radius:15px;
-  padding:15px;
-  display:none;
-  flex-direction:column;
-  box-shadow:0 0 20px rgba(0,0,0,0.8);
-  z-index:200;
-}
-
-#configModal input{
-  width:100%;
-  padding:5px;
-  margin:5px 0;
-  border-radius:8px;
-  border:none;
-}
-
-#configModal button{
-  margin-top:10px;
-  padding:8px;
-  border:none;
-  border-radius:8px;
-  background:#ff0033;
-  color:white;
-  cursor:pointer;
-}
-
-/* RÉGUA */
-#ruler{
-  position:absolute;
-  top:0;
-  left:0;
-  width:2000px;
-  height:30px;
-  background:#1c1c1c;
-  border-bottom:1px solid #333;
-}
+/* config modal */
+#configModal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;background:#181818;border-radius:15px;padding:15px;display:none;flex-direction:column;box-shadow:0 0 20px rgba(0,0,0,0.8);z-index:200;}
+#configModal input{width:100%;padding:5px;margin:5px 0;border-radius:8px;border:none;}
+#configModal button{margin-top:10px;padding:8px;border:none;border-radius:8px;background:#ff0033;color:white;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -197,12 +63,7 @@ body{
 </div>
 
 <script>
-let mediaRecorder;
-let chunks=[];
-let recordings=[];
-let isRecording=false;
-
-/* ELEMENTOS */
+let mediaRecorder, chunks=[], recordings=[], isRecording=false;
 const recBtn=document.getElementById("recBtn");
 const playBtn=document.getElementById("playBtn");
 const timeline=document.getElementById("timeline");
@@ -210,7 +71,7 @@ const editor=document.getElementById("editor");
 const bottombar=document.getElementById("bottombar");
 const playhead=document.getElementById("playhead");
 
-/* CONFIG MODAL */
+/* config modal */
 const configBtn=document.getElementById("configBtn");
 const configModal=document.getElementById("configModal");
 const closeConfig=document.getElementById("closeConfig");
@@ -218,352 +79,142 @@ const applyConfig=document.getElementById("applyConfig");
 const editorWidthInput=document.getElementById("editorWidth");
 const editorHeightInput=document.getElementById("editorHeight");
 
-/* GRAVAÇÃO ÁUDIO */
+/* GRAVAÇÃO */
 recBtn.onclick=async function(){
   if(!isRecording){
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     mediaRecorder=new MediaRecorder(stream);
-
     mediaRecorder.ondataavailable=e=>chunks.push(e.data);
-
     mediaRecorder.onstop=()=>{
       const blob=new Blob(chunks,{type:'audio/webm'});
       chunks=[];
       recordings.push(blob);
       createBlock(blob);
     };
-
     mediaRecorder.start();
-    recBtn.innerText="■";
-    recBtn.style.background="#aa0000";
+    recBtn.innerText="■"; recBtn.style.background="#aa0000";
     isRecording=true;
-  }else{
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Editor CapCut Áudio</title>
-
-<style>
-*{margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif;}
-body{
-  background:#0d0d0d;
-  color:white;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
-
-/* TOPO */
-#topbar{
-  height:50px;
-  background:#111;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:bold;
-  border-bottom:1px solid #222;
-}
-
-/* EDITOR TIMELINE */
-#editor{
-  background:#161616;
-  position:relative;
-  overflow:hidden;
-  flex:1;
-  width:100%;
-}
-
-/* SCROLL HORIZONTAL */
-#timeline{
-  position:absolute;
-  top:30px;
-  left:0;
-  height:100%;
-  width:2000px;
-  display:flex;
-  align-items:center;
-  padding:0 50px;
-  gap:10px;
-  overflow-x:auto;
-}
-
-/* CLIPS */
-.clip{
-  height:70px;
-  background:linear-gradient(45deg,#ff0055,#ff3366);
-  border-radius:12px;
-  min-width:100px;
-  position:relative;
-  cursor:pointer;
-}
-
-/* PLAYHEAD */
-#playhead{
-  position:absolute;
-  top:0;
-  left:0;
-  width:3px;
-  height:100%;
-  background:red;
-  z-index:10;
-}
-
-/* BARRA INFERIOR FIXA */
-#bottombar{
-  height:90px;
-  background:#000;
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  border-top:1px solid #222;
-  position: fixed;
-  bottom: 0px;
-  left: 0;
-  width: 100%;
-  z-index:100;
-  cursor:grab;
-}
-
-/* HANDLE PARA ARRASTAR */
-#barHandle{
-  position:absolute;
-  top:0;
-  left:50%;
-  transform:translateX(-50%);
-  width:100%;
-  height:10px;
-  cursor:ns-resize;
-}
-
-/* BOTÕES */
-.control-btn{
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  background:#222;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  color:white;
-  z-index:101;
-}
-
-.control-btn.play{
-  background:#ff0033;
-}
-
-.control-btn:active{
-  transform:scale(0.9);
-}
-
-/* CONFIG MODAL */
-#configModal{
-  position:fixed;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  width:300px;
-  background:#181818;
-  border-radius:15px;
-  padding:15px;
-  display:none;
-  flex-direction:column;
-  box-shadow:0 0 20px rgba(0,0,0,0.8);
-  z-index:200;
-}
-
-#configModal input{
-  width:100%;
-  padding:5px;
-  margin:5px 0;
-  border-radius:8px;
-  border:none;
-}
-
-#configModal button{
-  margin-top:10px;
-  padding:8px;
-  border:none;
-  border-radius:8px;
-  background:#ff0033;
-  color:white;
-  cursor:pointer;
-}
-
-/* RÉGUA */
-#ruler{
-  position:absolute;
-  top:0;
-  left:0;
-  width:2000px;
-  height:30px;
-  background:#1c1c1c;
-  border-bottom:1px solid #333;
-}
-</style>
-</head>
-<body>
-
-<div id="topbar">Editor de Áudio</div>
-
-<div id="editor">
-  <div id="playhead"></div>
-  <div id="ruler"></div>
-  <div id="timeline"></div>
-</div>
-
-<div id="bottombar">
-  <div id="barHandle"></div>
-  <div id="recBtn" class="control-btn">REC</div>
-  <div id="playBtn" class="control-btn play">▶</div>
-  <div class="control-btn">✂</div>
-  <div class="control-btn">🎵</div>
-  <div id="configBtn" class="control-btn">⚙</div>
-</div>
-
-<!-- MODAL CONFIGURAÇÃO -->
-<div id="configModal">
-  <h3>Configurações</h3>
-  <label>Largura do editor:</label>
-  <input type="number" id="editorWidth" value="1152">
-  <label>Altura do editor:</label>
-  <input type="number" id="editorHeight" value="648">
-  <button id="applyConfig">Aplicar</button>
-  <button id="closeConfig">Fechar</button>
-</div>
-
-<script>
-let mediaRecorder;
-let chunks=[];
-let recordings=[];
-let isRecording=false;
-
-/* ELEMENTOS */
-const recBtn=document.getElementById("recBtn");
-const playBtn=document.getElementById("playBtn");
-const timeline=document.getElementById("timeline");
-const editor=document.getElementById("editor");
-const bottombar=document.getElementById("bottombar");
-const playhead=document.getElementById("playhead");
-
-/* CONFIG MODAL */
-const configBtn=document.getElementById("configBtn");
-const configModal=document.getElementById("configModal");
-const closeConfig=document.getElementById("closeConfig");
-const applyConfig=document.getElementById("applyConfig");
-const editorWidthInput=document.getElementById("editorWidth");
-const editorHeightInput=document.getElementById("editorHeight");
-
-/* GRAVAÇÃO ÁUDIO */
-recBtn.onclick=async function(){
-  if(!isRecording){
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    mediaRecorder=new MediaRecorder(stream);
-
-    mediaRecorder.ondataavailable=e=>chunks.push(e.data);
-
-    mediaRecorder.onstop=()=>{
-      const blob=new Blob(chunks,{type:'audio/webm'});
-      chunks=[];
-      recordings.push(blob);
-      createBlock(blob);
-    };
-
-    mediaRecorder.start();
-    recBtn.innerText="■";
-    recBtn.style.background="#aa0000";
-    isRecording=true;
+    createBlock(null,true); // cria bloco e animação ao gravar
   }else{
     mediaRecorder.stop();
-    recBtn.innerText="REC";
-    recBtn.style.background="#ff0033";
+    recBtn.innerText="REC"; recBtn.style.background="#ff0033";
     isRecording=false;
   }
 };
 
-/* CRIAR BLOCO */
-function createBlock(blob){
+/* CRIA BLOCO */
+function createBlock(blob,animating=false){
   const block=document.createElement("div");
   block.className="clip";
-  const audio=new Audio(URL.createObjectURL(blob));
-  block.onclick=function(){audio.play();};
+  const input=document.createElement("input");
+  input.type="text"; input.value="Nova gravação";
+  block.appendChild(input);
+
+  if(blob){
+    const audio=new Audio(URL.createObjectURL(blob));
+    block.dataset.url=audio.src;
+  }
+
   timeline.appendChild(block);
+
+  if(animating){
+    let width=0;
+    const anim=setInterval(()=>{
+      width+=2;
+      block.style.minWidth=width+"px";
+      if(width>=100) clearInterval(anim);
+    },10);
+  }
+
+  /* drag & drop */
+  let isDragging=false, startX, startLeft;
+  block.addEventListener("mousedown",e=>{
+    isDragging=true; startX=e.clientX; startLeft=block.offsetLeft;
+  });
+  document.addEventListener("mouseup",()=>isDragging=false);
+  document.addEventListener("mousemove",e=>{
+    if(isDragging){
+      let dx=e.clientX-startX;
+      block.style.left=startLeft+dx+"px";
+      block.style.position="absolute";
+    }
+  });
+
+  /* tocar áudio clicando */
+  block.onclick=()=>{ 
+    if(block.dataset.url){
+      const audio=new Audio(block.dataset.url);
+      audio.play();
+    }
+  }
 }
 
-/* PLAY TODOS E ANIMAR PLAYHEAD */
-let playInterval;
+/* PLAYHEAD E PLAY */
+let playAnimation;
 playBtn.onclick=function(){
   if(playBtn.innerText==="▶"){
     playBtn.innerText="⏸";
     let startTime=0;
     const totalWidth=timeline.scrollWidth - timeline.clientWidth;
-    playhead.style.left="0px";
 
-    playInterval=setInterval(()=>{
-      startTime+=5; // velocidade do playhead
-      const percent=startTime/5000; // tempo simulado 5s total
-      if(percent>1){
-        clearInterval(playInterval);
-        playBtn.innerText="▶";
-        playhead.style.left="0px";
-        return;
-      }
+    function animatePlayhead(){
+      startTime+=2;
+      const percent=startTime/5000;
+      if(percent>1){ playBtn.innerText="▶"; playhead.style.left="0px"; return; }
       playhead.style.left=percent*totalWidth+"px";
-    },10);
 
-    recordings.forEach(blob=>{
-      const audio=new Audio(URL.createObjectURL(blob));
-      audio.play();
-    });
+      // tocar os áudios de acordo com a posição
+      document.querySelectorAll(".clip").forEach(block=>{
+        if(!block.dataset.played){
+          const rect=block.getBoundingClientRect();
+          const editorRect=editor.getBoundingClientRect();
+          if(rect.left<editorRect.left+playhead.offsetLeft+5){
+            if(block.dataset.url){
+              const audio=new Audio(block.dataset.url);
+              audio.play();
+              block.dataset.played="true";
+            }
+          }
+        }
+      });
+
+      playAnimation=requestAnimationFrame(animatePlayhead);
+    }
+    requestAnimationFrame(animatePlayhead);
 
   }else{
     playBtn.innerText="▶";
-    clearInterval(playInterval);
+    cancelAnimationFrame(playAnimation);
+    document.querySelectorAll(".clip").forEach(b=>delete b.dataset.played);
+    playhead.style.left="0px";
   }
 };
 
 /* CONFIGURAÇÕES */
-configBtn.onclick=function(){
-  configModal.style.display="flex";
-};
-
-closeConfig.onclick=function(){
-  configModal.style.display="none";
-};
-
-applyConfig.onclick=function(){
+configBtn.onclick=()=>configModal.style.display="flex";
+closeConfig.onclick=()=>configModal.style.display="none";
+applyConfig.onclick=()=>{
   const w=parseInt(editorWidthInput.value);
   const h=parseInt(editorHeightInput.value);
-  editor.style.width=w+"px";
-  editor.style.height=h+"px";
+  editor.style.width=w+"px"; editor.style.height=h+"px";
 };
 
 /* DRAG DA BARRA */
 const barHandle=document.getElementById("barHandle");
 let dragging=false;
-
 function moveBar(y){
   let newBottom=window.innerHeight - y - bottombar.offsetHeight/2;
   if(newBottom<0)newBottom=0;
   bottombar.style.bottom=newBottom+"px";
 }
-
 barHandle.addEventListener("mousedown",()=>dragging=true);
 document.addEventListener("mouseup",()=>dragging=false);
-document.addEventListener("mousemove",e=>{ if(dragging) moveBar(e.clientY); });
-
+document.addEventListener("mousemove",e=>{if(dragging) moveBar(e.clientY);});
 barHandle.addEventListener("touchstart",()=>dragging=true);
 document.addEventListener("touchend",()=>dragging=false);
 document.addEventListener("touchmove",e=>{
-  if(dragging){
-    e.preventDefault();
-    moveBar(e.touches[0].clientY);
-  }
-}, {passive:false});
+  if(dragging){e.preventDefault(); moveBar(e.touches[0].clientY);}
+},{passive:false});
 </script>
 
 </body>
