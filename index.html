@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Editor de Áudio</title>
+<title>Editor de Música</title>
 
 <style>
+*{box-sizing:border-box;}
+
 body{
   margin:0;
-  background:#111;
+  background:#0f0f0f;
   color:white;
   font-family:Arial, sans-serif;
   display:flex;
@@ -16,29 +18,33 @@ body{
   height:100vh;
 }
 
+/* TIMELINE */
 #timeline{
   flex:1;
+  background:#1c1c1c;
   overflow-x:auto;
   display:flex;
   align-items:center;
   padding:20px;
-  background:#1a1a1a;
+  gap:10px;
 }
 
 .block{
-  height:60px;
+  height:70px;
+  background:linear-gradient(45deg,#ff004c,#ff3366);
+  border-radius:10px;
   min-width:100px;
-  background:red;
-  margin-right:10px;
-  border-radius:8px;
+  position:relative;
 }
 
+/* BARRA FIXA */
 #controls{
   height:90px;
   background:#000;
   display:flex;
   justify-content:space-around;
   align-items:center;
+  border-top:1px solid #222;
 }
 
 button{
@@ -46,23 +52,44 @@ button{
   height:65px;
   border-radius:50%;
   border:none;
-  font-size:16px;
+  font-size:18px;
+  color:white;
 }
 
-#recBtn{background:red;color:white;}
-#playBtn{background:#444;color:white;}
-#listBtn{background:#666;color:white;}
+#recBtn{background:#ff0033;}
+#playBtn{background:#333;}
+#lyricsBtn{background:#555;}
 
-#recordList, #lyricsScreen{
-  display:none;
+/* MODAL LETRA */
+#lyricsModal{
   position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:#111;
-  overflow:auto;
-  padding:20px;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:110px;
+  width:90%;
+  max-width:500px;
+  height:300px;
+  background:#181818;
+  border-radius:15px;
+  padding:15px;
+  display:none;
+  flex-direction:column;
+  box-shadow:0 0 20px rgba(0,0,0,0.8);
+}
+
+#lyricsContent{
+  flex:1;
+  overflow-y:auto;
+  background:#101010;
+  padding:10px;
+  border-radius:10px;
+}
+
+#closeLyrics{
+  margin-top:10px;
+  background:#333;
+  height:40px;
+  border-radius:10px;
 }
 </style>
 </head>
@@ -74,95 +101,87 @@ button{
 <div id="controls">
   <button id="recBtn">REC</button>
   <button id="playBtn">▶</button>
-  <button id="listBtn">≡</button>
+  <button id="lyricsBtn">TXT</button>
 </div>
 
-<div id="recordList">
-  <h2>Lista de Gravações</h2>
-  <div id="listContainer"></div>
-  <button onclick="closeList()">Fechar</button>
-</div>
-
-<div id="lyricsScreen">
-  <button onclick="closeLyrics()">Voltar</button>
-  <h2>Letra da Música</h2>
-  <div style="height:300px; overflow-y:auto;">
-    <p>Aqui você poderá colocar a letra da música...</p>
-    <p>Ela pode rolar para cima e para baixo.</p>
+<div id="lyricsModal">
+  <div id="lyricsContent" contenteditable="true">
+    Escreva a letra da música aqui...
   </div>
+  <button id="closeLyrics">Fechar</button>
 </div>
 
 <script>
 let mediaRecorder;
-let chunks = [];
-let recordings = [];
-let isRecording = false;
+let chunks=[];
+let recordings=[];
+let isRecording=false;
 
-const recBtn = document.getElementById("recBtn");
-const timeline = document.getElementById("timeline");
+const recBtn=document.getElementById("recBtn");
+const playBtn=document.getElementById("playBtn");
+const timeline=document.getElementById("timeline");
 
-recBtn.onclick = async function(){
+/* GRAVAÇÃO */
+recBtn.onclick=async function(){
   if(!isRecording){
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    mediaRecorder = new MediaRecorder(stream);
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRecorder=new MediaRecorder(stream);
 
-    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    mediaRecorder.ondataavailable=e=>chunks.push(e.data);
 
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(chunks,{type:'audio/webm'});
-      chunks = [];
-      const url = URL.createObjectURL(blob);
-      recordings.push(url);
-      addBlock();
+    mediaRecorder.onstop=()=>{
+      const blob=new Blob(chunks,{type:'audio/webm'});
+      chunks=[];
+      recordings.push(blob);
+      createBlock(blob);
     };
 
     mediaRecorder.start();
-    recBtn.innerText = "■";
-    recBtn.style.background = "#900";
-    isRecording = true;
+    recBtn.innerText="■";
+    recBtn.style.background="#aa0000";
+    isRecording=true;
   }else{
     mediaRecorder.stop();
-    recBtn.innerText = "REC";
-    recBtn.style.background = "red";
-    isRecording = false;
+    recBtn.innerText="REC";
+    recBtn.style.background="#ff0033";
+    isRecording=false;
   }
 };
 
-function addBlock(){
-  const block = document.createElement("div");
-  block.className = "block";
+/* CRIAR BLOCO */
+function createBlock(blob){
+  const block=document.createElement("div");
+  block.className="block";
+
+  const audio=new Audio(URL.createObjectURL(blob));
+
+  block.onclick=function(){
+    audio.play();
+  };
+
   timeline.appendChild(block);
 }
 
-document.getElementById("listBtn").onclick = function(){
-  document.getElementById("recordList").style.display = "block";
-  updateList();
-};
-
-function closeList(){
-  document.getElementById("recordList").style.display = "none";
-}
-
-function updateList(){
-  let container = document.getElementById("listContainer");
-  container.innerHTML = "";
-  recordings.forEach((rec,index)=>{
-    let btn = document.createElement("button");
-    btn.innerText = "Gravação "+(index+1);
-    btn.onclick = function(){
-      addBlock();
-    };
-    container.appendChild(btn);
+/* PLAY TODOS */
+playBtn.onclick=function(){
+  recordings.forEach(blob=>{
+    const audio=new Audio(URL.createObjectURL(blob));
+    audio.play();
   });
-}
-
-document.getElementById("playBtn").onclick = function(){
-  document.getElementById("lyricsScreen").style.display = "block";
 };
 
-function closeLyrics(){
-  document.getElementById("lyricsScreen").style.display = "none";
-}
+/* LETRA */
+const lyricsBtn=document.getElementById("lyricsBtn");
+const lyricsModal=document.getElementById("lyricsModal");
+const closeLyrics=document.getElementById("closeLyrics");
+
+lyricsBtn.onclick=function(){
+  lyricsModal.style.display="flex";
+};
+
+closeLyrics.onclick=function(){
+  lyricsModal.style.display="none";
+};
 </script>
 
 </body>
