@@ -3,42 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Editor de Música</title>
+<title>Editor CapCut Áudio</title>
 
 <style>
-*{box-sizing:border-box;}
+*{margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif;}
 
 body{
-  margin:0;
-  background:#0f0f0f;
+  background:#0d0d0d;
   color:white;
-  font-family:Arial, sans-serif;
+  height:100vh;
   display:flex;
   flex-direction:column;
-  height:100vh;
+  overflow:hidden;
 }
 
-/* TIMELINE */
-#timeline{
-  flex:1;
-  background:#1c1c1c;
-  overflow-x:auto;
+/* TOPO */
+#topbar{
+  height:50px;
+  background:#111;
   display:flex;
   align-items:center;
-  padding:20px;
-  gap:10px;
+  justify-content:center;
+  font-weight:bold;
+  border-bottom:1px solid #222;
 }
 
-.block{
+/* EDITOR TIMELINE */
+#editor{
+  flex:1;
+  position:relative;
+  background:#161616;
+  overflow:hidden;
+}
+
+/* SCROLL HORIZONTAL */
+#timeline{
+  position:absolute;
+  top:30px;
+  left:0;
+  height:100%;
+  width:2000px;
+  display:flex;
+  align-items:center;
+  padding:0 50px;
+  gap:10px;
+  overflow-x:auto;
+}
+
+/* CLIPS */
+.clip{
   height:70px;
-  background:linear-gradient(45deg,#ff004c,#ff3366);
-  border-radius:10px;
+  background:linear-gradient(45deg,#ff0055,#ff3366);
+  border-radius:12px;
   min-width:100px;
   position:relative;
 }
 
-/* BARRA FIXA */
-#controls{
+/* PLAYHEAD */
+#playhead{
+  position:absolute;
+  top:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:3px;
+  height:100%;
+  background:red;
+  z-index:10;
+}
+
+/* BARRA INFERIOR */
+#bottombar{
   height:90px;
   background:#000;
   display:flex;
@@ -47,68 +81,54 @@ body{
   border-top:1px solid #222;
 }
 
-button{
-  width:65px;
-  height:65px;
+.control-btn{
+  width:60px;
+  height:60px;
   border-radius:50%;
-  border:none;
+  background:#222;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   font-size:18px;
   color:white;
 }
 
-#recBtn{background:#ff0033;}
-#playBtn{background:#333;}
-#lyricsBtn{background:#555;}
-
-/* MODAL LETRA */
-#lyricsModal{
-  position:fixed;
-  left:50%;
-  transform:translateX(-50%);
-  bottom:110px;
-  width:90%;
-  max-width:500px;
-  height:300px;
-  background:#181818;
-  border-radius:15px;
-  padding:15px;
-  display:none;
-  flex-direction:column;
-  box-shadow:0 0 20px rgba(0,0,0,0.8);
+.control-btn.play{
+  background:#ff0033;
 }
 
-#lyricsContent{
-  flex:1;
-  overflow-y:auto;
-  background:#101010;
-  padding:10px;
-  border-radius:10px;
+.control-btn:active{
+  transform:scale(0.9);
 }
 
-#closeLyrics{
-  margin-top:10px;
-  background:#333;
-  height:40px;
-  border-radius:10px;
+/* RÉGUA */
+#ruler{
+  position:absolute;
+  top:0;
+  left:0;
+  width:2000px;
+  height:30px;
+  background:#1c1c1c;
+  border-bottom:1px solid #333;
 }
 </style>
 </head>
-
 <body>
 
-<div id="timeline"></div>
+<div id="topbar">Editor de Áudio</div>
 
-<div id="controls">
-  <button id="recBtn">REC</button>
-  <button id="playBtn">▶</button>
-  <button id="lyricsBtn">TXT</button>
+<div id="editor">
+  <div id="playhead"></div>
+  <div id="ruler"></div>
+  <div id="timeline"></div>
 </div>
 
-<div id="lyricsModal">
-  <div id="lyricsContent" contenteditable="true">
-    Escreva a letra da música aqui...
-  </div>
-  <button id="closeLyrics">Fechar</button>
+<div id="bottombar">
+  <div id="recBtn" class="control-btn">REC</div>
+  <div id="playBtn" class="control-btn play">▶</div>
+  <div class="control-btn">✂</div>
+  <div class="control-btn">🎵</div>
+  <div class="control-btn">⚙</div>
 </div>
 
 <script>
@@ -151,13 +171,10 @@ recBtn.onclick=async function(){
 /* CRIAR BLOCO */
 function createBlock(blob){
   const block=document.createElement("div");
-  block.className="block";
+  block.className="clip";
 
   const audio=new Audio(URL.createObjectURL(blob));
-
-  block.onclick=function(){
-    audio.play();
-  };
+  block.onclick=function(){audio.play();};
 
   timeline.appendChild(block);
 }
@@ -168,19 +185,6 @@ playBtn.onclick=function(){
     const audio=new Audio(URL.createObjectURL(blob));
     audio.play();
   });
-};
-
-/* LETRA */
-const lyricsBtn=document.getElementById("lyricsBtn");
-const lyricsModal=document.getElementById("lyricsModal");
-const closeLyrics=document.getElementById("closeLyrics");
-
-lyricsBtn.onclick=function(){
-  lyricsModal.style.display="flex";
-};
-
-closeLyrics.onclick=function(){
-  lyricsModal.style.display="none";
 };
 </script>
 
