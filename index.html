@@ -1,266 +1,169 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Audio Editor</title>
+<title>Editor de Áudio</title>
 
 <style>
 body{
-	margin:0;
-	background:#111;
-	font-family:Arial;
-	color:white;
-	overflow:hidden;
-}
-
-/* TELA */
-#inicio, #editor{
-	position:absolute;
-	width:100%;
-	height:100vh;
-	display:none;
-}
-
-#inicio{
-	display:flex;
-	justify-content:center;
-	align-items:center;
-	flex-direction:column;
-	background:#1c1c1c;
-}
-
-/* TOPO */
-#topbar{
-	height:60px;
-	background:#1a1a1a;
-	display:flex;
-	align-items:center;
-	padding:0 15px;
-}
-
-/* AREA GRAVAÇÃO */
-#gravacaoBox{
-	position:absolute;
-	top:70px;
-	left:50%;
-	transform:translateX(-50%);
-	width:80%;
-	height:60px;
-	background:black;
-	border-radius:8px;
-	display:flex;
-	align-items:center;
-}
-
-#linhaGravando{
-	width:4px;
-	height:80%;
-	background:red;
-	margin-left:5px;
-	display:none;
-}
-
-/* TIMELINE */
-#timelineContainer{
-	position:absolute;
-	top:150px;
-	bottom:90px;
-	left:0;
-	right:0;
-	overflow-x:auto;
-	background:#181818;
+  margin:0;
+  background:#111;
+  color:white;
+  font-family:Arial, sans-serif;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
 }
 
 #timeline{
-	position:relative;
-	height:100%;
-	width:4000px;
+  flex:1;
+  overflow-x:auto;
+  display:flex;
+  align-items:center;
+  padding:20px;
+  background:#1a1a1a;
 }
 
-.bloco{
-	position:absolute;
-	height:70px;
-	background:#00c3ff;
-	border-radius:8px;
-	top:50%;
-	transform:translateY(-50%);
-	display:flex;
-	align-items:center;
-	justify-content:center;
-	font-size:12px;
-	color:black;
-	padding:5px;
+.block{
+  height:60px;
+  min-width:100px;
+  background:red;
+  margin-right:10px;
+  border-radius:8px;
 }
 
-/* BARRA INFERIOR */
-#bottombar{
-	position:absolute;
-	bottom:0;
-	left:0;
-	right:0;
-	height:90px;
-	background:#1a1a1a;
-	display:flex;
-	justify-content:space-around;
-	align-items:center;
+#controls{
+  height:90px;
+  background:#000;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
 }
 
 button{
-	padding:12px 18px;
-	border:none;
-	border-radius:8px;
-	font-size:16px;
+  width:65px;
+  height:65px;
+  border-radius:50%;
+  border:none;
+  font-size:16px;
 }
 
-.rec{ background:red; color:white; }
-.play{ background:#00ff95; }
+#recBtn{background:red;color:white;}
+#playBtn{background:#444;color:white;}
+#listBtn{background:#666;color:white;}
+
+#recordList, #lyricsScreen{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:#111;
+  overflow:auto;
+  padding:20px;
+}
 </style>
 </head>
 
 <body>
 
-<div id="inicio">
-	<h2>🎵 Editor de Áudio</h2>
-	<button onclick="abrirEditor()">Criar Música</button>
+<div id="timeline"></div>
+
+<div id="controls">
+  <button id="recBtn">REC</button>
+  <button id="playBtn">▶</button>
+  <button id="listBtn">≡</button>
 </div>
 
-<div id="editor">
+<div id="recordList">
+  <h2>Lista de Gravações</h2>
+  <div id="listContainer"></div>
+  <button onclick="closeList()">Fechar</button>
+</div>
 
-	<div id="topbar">
-		<button onclick="voltar()">⬅</button>
-		<span style="margin-left:15px;">Projeto</span>
-	</div>
-
-	<div id="gravacaoBox">
-		<div id="linhaGravando"></div>
-	</div>
-
-	<div id="timelineContainer">
-		<div id="timeline"></div>
-	</div>
-
-	<div id="bottombar">
-		<button id="recBtn" class="rec" onclick="toggleRec()">GRAVAR</button>
-		<button class="play" onclick="playAll()">▶ Play</button>
-	</div>
-
+<div id="lyricsScreen">
+  <button onclick="closeLyrics()">Voltar</button>
+  <h2>Letra da Música</h2>
+  <div style="height:300px; overflow-y:auto;">
+    <p>Aqui você poderá colocar a letra da música...</p>
+    <p>Ela pode rolar para cima e para baixo.</p>
+  </div>
 </div>
 
 <script>
-let gravando=false;
 let mediaRecorder;
-let chunks=[];
-let blocos=[];
-let blocoAtual=null;
-let inicioTempo;
-let contador=1;
+let chunks = [];
+let recordings = [];
+let isRecording = false;
 
-document.getElementById("inicio").style.display="flex";
+const recBtn = document.getElementById("recBtn");
+const timeline = document.getElementById("timeline");
 
-function abrirEditor(){
-	document.getElementById("inicio").style.display="none";
-	document.getElementById("editor").style.display="block";
+recBtn.onclick = async function(){
+  if(!isRecording){
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks,{type:'audio/webm'});
+      chunks = [];
+      const url = URL.createObjectURL(blob);
+      recordings.push(url);
+      addBlock();
+    };
+
+    mediaRecorder.start();
+    recBtn.innerText = "■";
+    recBtn.style.background = "#900";
+    isRecording = true;
+  }else{
+    mediaRecorder.stop();
+    recBtn.innerText = "REC";
+    recBtn.style.background = "red";
+    isRecording = false;
+  }
+};
+
+function addBlock(){
+  const block = document.createElement("div");
+  block.className = "block";
+  timeline.appendChild(block);
 }
 
-function voltar(){
-	document.getElementById("editor").style.display="none";
-	document.getElementById("inicio").style.display="flex";
+document.getElementById("listBtn").onclick = function(){
+  document.getElementById("recordList").style.display = "block";
+  updateList();
+};
+
+function closeList(){
+  document.getElementById("recordList").style.display = "none";
 }
 
-async function toggleRec(){
-
-	if(!gravando){
-
-		try{
-			const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-			mediaRecorder=new MediaRecorder(stream);
-
-			mediaRecorder.ondataavailable=e=>{
-				if(e.data.size>0) chunks.push(e.data);
-			};
-
-			mediaRecorder.onstop=()=>{
-				if(chunks.length===0){
-					alert("Nada foi gravado.");
-					return;
-				}
-
-				let blob=new Blob(chunks,{type:"audio/webm"});
-				chunks=[];
-				blocoAtual.audioURL=URL.createObjectURL(blob);
-				blocos.push(blocoAtual);
-				blocoAtual=null;
-			};
-
-			mediaRecorder.start();
-			gravando=true;
-			document.getElementById("recBtn").innerText="PARAR";
-			document.getElementById("linhaGravando").style.display="block";
-
-			inicioTempo=Date.now();
-			criarBloco();
-
-		}catch(err){
-			alert("Permissão de microfone negada ou navegador bloqueou.");
-			console.log(err);
-		}
-
-	}else{
-
-		mediaRecorder.stop();
-		gravando=false;
-		document.getElementById("recBtn").innerText="GRAVAR";
-		document.getElementById("linhaGravando").style.display="none";
-	}
+function updateList(){
+  let container = document.getElementById("listContainer");
+  container.innerHTML = "";
+  recordings.forEach((rec,index)=>{
+    let btn = document.createElement("button");
+    btn.innerText = "Gravação "+(index+1);
+    btn.onclick = function(){
+      addBlock();
+    };
+    container.appendChild(btn);
+  });
 }
 
-function criarBloco(){
-	let timeline=document.getElementById("timeline");
+document.getElementById("playBtn").onclick = function(){
+  document.getElementById("lyricsScreen").style.display = "block";
+};
 
-	let div=document.createElement("div");
-	div.className="bloco";
-	div.style.left="50px";
-	div.style.width="10px";
-	div.innerText="Som "+contador++;
-
-	timeline.appendChild(div);
-
-	blocoAtual={
-		element:div,
-		audioURL:null
-	};
-
-	animar();
-}
-
-function animar(){
-	if(!gravando) return;
-
-	let largura=(Date.now()-inicioTempo)/8;
-	blocoAtual.element.style.width=largura+"px";
-
-	requestAnimationFrame(animar);
-}
-
-function playAll(){
-
-	if(blocos.length===0){
-		alert("Nenhum áudio gravado.");
-		return;
-	}
-
-	let delay=0;
-
-	blocos.forEach(b=>{
-		setTimeout(()=>{
-			let audio=new Audio(b.audioURL);
-			audio.play();
-		},delay);
-		delay+=1500;
-	});
+function closeLyrics(){
+  document.getElementById("lyricsScreen").style.display = "none";
 }
 </script>
 
 </body>
-  </html>
+</html>
